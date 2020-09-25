@@ -5,18 +5,18 @@ import android.view.MotionEvent;
 /**
  * Gesture detector for multi-pointer scale and pan.
  * 
- * <li>When pointer count reaches the minimum of touch pointer (default is 2) , {@link OnFotorScalePanGestureListener#onScalePanFocus(float, float)} will be invoked.</li>
- * <li>After the begin of gesture, any pointer's motion will active {@link OnFotorScalePanGestureListener#onScalePan(float, float, float)}.</li>
+ * <li>When pointer count reaches the minimum of touch pointer (default is 2) , {@link OnScalePanGestureListener#onScalePanFocus(float, float)} will be invoked.</li>
+ * <li>After the begin of gesture, any pointer's motion will active {@link OnScalePanGestureListener#onScalePan(float, float, float)}.</li>
  * <li>The pointers of which the index is larger than maximum of touch pointer will be ignore.</li>
  * <li>Add or release pointers in the range of minimum and maximum of touch pointer will relocate (or restart) gesture.</li>
  * <li>If current pointer count is greater than maximum of touch pointer, the release of pointers which is valid will force the detector to quit current gesture (user need to release all pointers to restart gesture).</li>
- * <li>When current pointer count is equal to minimum of touch pointer, the releasing will call {@link OnFotorScalePanGestureListener#onScalePanEnd()}.</li>
+ * <li>When current pointer count is equal to minimum of touch pointer, the releasing will call {@link OnScalePanGestureListener#onScalePanEnd()}.</li>
  * 
  * @author wxfred
  */
-public class FotorScalePanGestureDetector {
+public class ScalePanGestureDetector {
 	
-	public interface OnFotorScalePanGestureListener {
+	public interface OnScalePanGestureListener {
 		/**
 		 * The begin of scale and pan gesture.
 		 * Return current focus point.
@@ -44,13 +44,13 @@ public class FotorScalePanGestureDetector {
 	
 	//private static final String TAG = "FotorScalePanGestureDetector";
 	
-	private OnFotorScalePanGestureListener mListener;
+	private OnScalePanGestureListener mListener;
 	private int mTouchPointerMin, mTouchPointerMax;
 	private float mPreFocusX, mPreFocusY;
 	private float mPreSpan;
 	private boolean mWaitingToQuit;
 	
-	public FotorScalePanGestureDetector(OnFotorScalePanGestureListener listener) {
+	public ScalePanGestureDetector(OnScalePanGestureListener listener) {
 		mListener = listener;
 		mTouchPointerMin = 2;
 		mTouchPointerMax = Integer.MAX_VALUE;
@@ -58,7 +58,7 @@ public class FotorScalePanGestureDetector {
 	}
 	
 	/**
-	 * Accepts MotionEvents and dispatches events to a {@link OnFotorScalePanGestureListener} when appropriate.
+	 * Accepts MotionEvents and dispatches events to a {@link OnScalePanGestureListener} when appropriate.
 	 * 
 	 * @return True if the event was handled, false otherwise.
 	 */

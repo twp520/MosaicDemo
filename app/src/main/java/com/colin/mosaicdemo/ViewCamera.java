@@ -12,7 +12,7 @@ import android.view.animation.DecelerateInterpolator;
 /**
  * @author wxfred
  */
-public class ViewCamera implements FotorScalePanGestureDetector.OnFotorScalePanGestureListener {
+public class ViewCamera implements ScalePanGestureDetector.OnScalePanGestureListener {
 
     private static final String TAG = "View Camera";
     private float mbottomMargin;
@@ -32,7 +32,7 @@ public class ViewCamera implements FotorScalePanGestureDetector.OnFotorScalePanG
 
     private float mImageWidth, mImageHeight;
 
-    private FotorScalePanGestureDetector mFotorScalePanGestureDetector;
+    private ScalePanGestureDetector mFotorScalePanGestureDetector;
     private float mScaleFocusXLast;
     private float mScaleFocusYLast;
     boolean mIsScaling;
@@ -58,7 +58,7 @@ public class ViewCamera implements FotorScalePanGestureDetector.OnFotorScalePanG
         mScaleAnimation = new PassiveAnimation();
         mScaleAnimation.setInterpolator(new DecelerateInterpolator());
 
-        mFotorScalePanGestureDetector = new FotorScalePanGestureDetector(this);
+        mFotorScalePanGestureDetector = new ScalePanGestureDetector(this);
 
         mIsScaling = false;
         mIsAnimating = false;
