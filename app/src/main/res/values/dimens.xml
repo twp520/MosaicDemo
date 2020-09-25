@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="min_size">10dp</dimen>
+    <dimen name="max_size">30dp</dimen>
+    <dimen name="bot_height">100dp</dimen>
+</resources>
