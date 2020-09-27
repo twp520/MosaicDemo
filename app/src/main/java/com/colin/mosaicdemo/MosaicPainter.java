@@ -441,7 +441,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         float scale = mViewCamera.getViewScale() / mFitScale;
         mRealPaintSize = mPaintSize / scale;
         //由于镜子中自带缩放，画笔在这里缩小的，在镜子显示出来的会放大回去，所以这里圆圈大小要把画笔缩放的乘回去。
-        mMirrorCenterCircleRadius = mRealPaintSize * scale / 2f;
+        mMirrorCenterCircleRadius = mPaintSize / 2f;
         if (mirrorRectF != null)
             mirrorRectF.setCircleRadius(mMirrorCenterCircleRadius);
 
@@ -449,7 +449,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
 
     public float getPaintSize() {
-        return mRealPaintSize;
+        return mPaintSize;
     }
 
     public Bitmap getResultBitmap() {
