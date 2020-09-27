@@ -85,6 +85,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
     //画笔大小相关参数
     private float mPaintSize; //画笔大小。
+    private float mFitScale;
     private float mRealPaintSize; //实际画笔大小，需要除以scale
     private int mMinSizeRadius;
     private int mMaxSizeRadius;
@@ -103,7 +104,6 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
     private void init() {
         mViewCamera = new ViewCamera(this);
-        mViewCamera.setBlock(true);
         mPathList = new ArrayList<>();
         mRedoPathList = new ArrayList<>();
         mPaintSrc = new Paint(Paint.DITHER_FLAG);
@@ -139,7 +139,8 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
         mMaxSizeRadius = getContext().getResources().getDimensionPixelSize(R.dimen.max_size);
 
-        mPaintSize = DEFAULT_SIZE_PERCENT;
+        mRealPaintSize = mPaintSize = ValueMappingUtils.getLinearOutput(0, mMinSizeRadius,
+                100, mMaxSizeRadius, DEFAULT_SIZE_PERCENT);
     }
 
     @Override
@@ -185,7 +186,9 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
                 mirrorRectF.calculate(mPointerX, mPointerY, imagePosition[0], imagePosition[1]);
                 canvas.save();
                 canvas.drawBitmap(mResultBitmap, mirrorRectF.getImageRect(), mirrorRectF.getRectF(), null);
+                mPaintMirror.setStrokeWidth(8f);
                 canvas.drawRoundRect(mirrorRectF.getRectF(), mMirrorRoundRadius, mMirrorRoundRadius, mPaintMirror);
+                mPaintMirror.setStrokeWidth(4f);
                 canvas.drawCircle(mirrorRectF.getCircleX(), mirrorRectF.getCircleY(),
                         mMirrorCenterCircleRadius, mPaintMirror);
                 canvas.restore();
@@ -316,12 +319,12 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         mViewCamera.setBlock(true);
         mViewCamera.setImageSize(mSrcBitmap.getWidth(), mSrcBitmap.getHeight());
         setMskBitmap(msk);
-        isInit = true;
-        isPreView = false;
-        mRealPaintSize = mPaintSize / mViewCamera.getViewScale();
-        mMirrorCenterCircleRadius = mRealPaintSize / 2f;
+        mFitScale = mViewCamera.getViewScale();
         mirrorRectF = new MosaicMirrorRectF(mMirrorSize, mMirrorSize, 10, 10,
                 mMirrorCenterCircleRadius, getWidth(), mSrcBitmap.getWidth(), mSrcBitmap.getHeight());
+        setRealPaintSizeAndMirrorCenterCircleRadius();
+        isInit = true;
+        isPreView = false;
     }
 
 
@@ -385,10 +388,12 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
     @Override
     public void onViewScaleChanged(float viewScale) {
-        //缩放时候，动态设置镜子图片的大小
-        if (mirrorRectF != null)
-            mirrorRectF.setImageRectSize((int) (mMirrorSize / viewScale));
-        mRealPaintSize = mPaintSize / viewScale;
+        if (!isInit)
+            return;
+        float scale = viewScale / mFitScale;
+        float tmpMirrorImageSize = mMirrorSize / scale;
+        mirrorRectF.setImageRectSize((int) tmpMirrorImageSize);
+        mRealPaintSize = mPaintSize / scale;
     }
 
     //undo时候，将pathList的最后一条移除，添加到redoList去
@@ -429,15 +434,22 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
     public void setPaintSizeByProgress(int progress) {
         mPaintSize = ValueMappingUtils.getLinearOutput(0, mMinSizeRadius,
                 100, mMaxSizeRadius, progress);
-        mRealPaintSize = mPaintSize / mViewCamera.getViewScale();
-        mMirrorCenterCircleRadius = mRealPaintSize / 2f;
+        setRealPaintSizeAndMirrorCenterCircleRadius();
+    }
+
+    private void setRealPaintSizeAndMirrorCenterCircleRadius() {
+        float scale = mViewCamera.getViewScale() / mFitScale;
+        mRealPaintSize = mPaintSize / scale;
+        //由于镜子中自带缩放，画笔在这里缩小的，在镜子显示出来的会放大回去，所以这里圆圈大小要把画笔缩放的乘回去。
+        mMirrorCenterCircleRadius = mRealPaintSize * scale / 2f;
         if (mirrorRectF != null)
             mirrorRectF.setCircleRadius(mMirrorCenterCircleRadius);
+
     }
 
 
     public float getPaintSize() {
-        return mPaintSize;
+        return mRealPaintSize;
     }
 
     public Bitmap getResultBitmap() {
