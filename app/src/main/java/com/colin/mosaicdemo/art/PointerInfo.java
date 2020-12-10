@@ -73,7 +73,7 @@ public class PointerInfo {
      * @param event 触摸事件
      */
     public void calculationTranslation(MotionEvent event) {
-        if (event.getPointerId(event.getActionIndex()) == actionPointerId&&texturePositionRect!=null) {
+        if (event.getPointerId(event.getActionIndex()) == actionPointerId && texturePositionRect != null) {
             //安全区的判断
             float dx = event.getX() - actionX;
             float dy = event.getY() - actionY;
@@ -92,6 +92,9 @@ public class PointerInfo {
 
     /**
      * 计算旋转和缩放
+     * <p>
+     * 关于旋转中心的问题，旋转中心使用双指距离的中间点体验最好，但由于后续需要保存需要，
+     * 不好记录，故使用画布中心点。
      *
      * @param event   触摸事件
      * @param centerX 旋转，缩放中心x坐标
