@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.mosaic;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -20,6 +20,10 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
+import com.colin.mosaicdemo.R;
+import com.colin.mosaicdemo.util.Logger;
+import com.colin.mosaicdemo.util.ValueMappingUtils;
+import com.colin.mosaicdemo.util.ViewCamera;
 
 import java.util.ArrayList;
 
@@ -36,25 +40,25 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
     //视图相机
     private ViewCamera mViewCamera;
     //原图
-    private Bitmap mSrcBitmap;
+    protected Bitmap mSrcBitmap;
     //结果的图片
     private Bitmap mResultBitmap;
     //用于画路径的透明图片
-    private Bitmap mPathBitmap;
+    protected Bitmap mPathBitmap;
 
     //普通画笔，叠加
-    private Paint mPaintSrc;
+    protected Paint mPaintSrc;
     //用于画路径的画笔
-    private Paint mPaintPath;
-    //马赛克的画笔
-    private Paint mPaintClean;
+    protected Paint mPaintPath;
+    //橡皮擦的画笔
+    protected Paint mPaintClean;
     //镜子画笔
     private Paint mPaintMirror;
 
     //用于路径画布
-    private Canvas mPathCanvas;
+    protected Canvas mPathCanvas;
     //最终效果画布，通过效果画布滑道resultBitmap上，再把resultBitmap画到view上。
-    private Canvas mResultCanvas;
+    protected Canvas mResultCanvas;
 
     //路径集合
     private ArrayList<MosaicPath> mPathList;
@@ -62,15 +66,16 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
     //是否是预览，这时候马赛克还未算出来，不响应事件那些
     private boolean isPreView = true;
     private boolean isInit = false;
-    private boolean isDrawAll = true;
+    protected boolean isDrawAll = true;
     //是否在拖动缩放
     private boolean mIsTriggerMultiTouch = false;
     //图片距离底部的距离
-    private float mBottomMargin;
+    protected float mBottomMargin;
+    protected Logger logger;
     //当前画笔模式
-    private int currentModel;
+    public int currentModel;
     //选择的是马赛克还是纹理，
-    private int selectMskModel;
+    protected int selectMskModel;
     //回调
     private MosaicInterFace mInterFace;
     private Uri selectedPicUri;
@@ -85,11 +90,11 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
     //画笔大小相关参数
     private float mPaintSize; //画笔大小。
-    private float mFitScale;
+    protected float mFitScale;
     private float mRealPaintSize; //实际画笔大小，需要除以scale
     private int mMinSizeRadius;
     private int mMaxSizeRadius;
-    private static final float DEFAULT_SIZE_PERCENT = 50;
+    private static final float DEFAULT_SIZE_PERCENT = 30;
 
 
     public MosaicPainter(Context context) {
@@ -107,14 +112,11 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         mPathList = new ArrayList<>();
         mRedoPathList = new ArrayList<>();
         mPaintSrc = new Paint(Paint.DITHER_FLAG);
+        mPaintSrc.setAntiAlias(true);
         mPaintSrc.setFilterBitmap(true);
-        mPaintPath = new Paint(Paint.DITHER_FLAG);
-        mPaintPath.setStyle(Paint.Style.STROKE);
-        mPaintPath.setStrokeJoin(Paint.Join.ROUND);
-        mPaintPath.setStrokeCap(Paint.Cap.ROUND);
-        mPaintPath.setColor(Color.RED);
-        mPaintPath.setAntiAlias(true);
-        mPaintPath.setFilterBitmap(true);
+        logger = new Logger();
+        mPaintPath = new Paint();
+        setPathPaint(mPaintPath);
 
         //纹理的画笔
 //        Paint mPaintSRC_IN = new Paint();
@@ -125,11 +127,12 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
         mViewCamera.setViewCameraListener(this);
 
-        mPaintMirror = new Paint();
+        mPaintMirror = new Paint(Paint.DITHER_FLAG);
         mPaintMirror.setStyle(Paint.Style.STROKE);
         mPaintMirror.setStrokeWidth(8f);
-        mPaintMirror.setShadowLayer(4f, 5f, 5f, Color.BLACK);
+        mPaintMirror.setShadowLayer(4f, 0f, 0f, Color.BLACK);
         mPaintMirror.setColor(Color.WHITE);
+        mPaintMirror.setAntiAlias(true);
 
         mMirrorSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                 128, getResources().getDisplayMetrics());
@@ -141,12 +144,14 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
 
         mRealPaintSize = mPaintSize = ValueMappingUtils.getLinearOutput(0, mMinSizeRadius,
                 100, mMaxSizeRadius, DEFAULT_SIZE_PERCENT);
+        setLayerType(LAYER_TYPE_SOFTWARE, null);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (mSrcBitmap == null) {
+            logger.warning("no bitmap");
             return;
         }
         mViewCamera.onDrawInit(canvas, mBottomMargin);
@@ -157,26 +162,10 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
             canvas.drawBitmap(mSrcBitmap, x, y, mPaintSrc);
             mViewCamera.onDrawEnd(canvas);
         } else {
-            mResultCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             mResultCanvas.drawBitmap(mSrcBitmap, 0, 0, mPaintSrc);
             mResultCanvas.save();
-            if (isDrawAll) {
-                mPathCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                //对path进行合成
-                for (MosaicPath mosaicPath : mPathList) {
-                    drawSinglePath(mosaicPath);
-                }
-                isDrawAll = false;
-            } else {
-                if (mPathList.isEmpty()) {
-                    mPathCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                } else {
-                    MosaicPath lastPath = getLastPath();
-                    drawSinglePath(lastPath);
-                }
-            }
-
-            mResultCanvas.drawBitmap(mPathBitmap, 0, 0, mPaintSrc);
+            drawMask();
+            drawPathToCanvas();
             mResultCanvas.restore();
             canvas.drawBitmap(mResultBitmap, x, y, mPaintSrc);
             mViewCamera.onDrawEnd(canvas);
@@ -184,32 +173,74 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
             if (mPointerX > -1 && mPointerY > -1 && !mIsTriggerMultiTouch) {
                 float[] imagePosition = mViewCamera.mapToImageFromView(mPointerX, mPointerY);
                 mirrorRectF.calculate(mPointerX, mPointerY, imagePosition[0], imagePosition[1]);
-                canvas.save();
-                canvas.drawBitmap(mResultBitmap, mirrorRectF.getImageRect(), mirrorRectF.getRectF(), null);
-                mPaintMirror.setStrokeWidth(8f);
-                canvas.drawRoundRect(mirrorRectF.getRectF(), mMirrorRoundRadius, mMirrorRoundRadius, mPaintMirror);
-                mPaintMirror.setStrokeWidth(4f);
-                canvas.drawCircle(mirrorRectF.getCircleX(), mirrorRectF.getCircleY(),
-                        mMirrorCenterCircleRadius, mPaintMirror);
-                canvas.restore();
+                if (!mirrorRectF.circleOverEdge) { // 超出边界不显示指示镜
+                    canvas.save();
+                    canvas.drawBitmap(mResultBitmap, mirrorRectF.getImageRect(), mirrorRectF.getRectF(), null);
+                    mPaintMirror.setStrokeWidth(8f);
+                    canvas.drawRoundRect(mirrorRectF.getRectF(), mMirrorRoundRadius, mMirrorRoundRadius, mPaintMirror);
+                    mPaintMirror.setStrokeWidth(4f);
+                    canvas.drawCircle(mirrorRectF.getCircleX(), mirrorRectF.getCircleY(),
+                            mMirrorCenterCircleRadius, mPaintMirror);
+                    canvas.restore();
+                }
             }
         }
     }
 
-    private void drawSinglePath(MosaicPath lastPath) {
-        if (lastPath.type == MosaicPath.TYPE_CLEAN) {
-            mPaintClean.setStrokeWidth(lastPath.size);
-            mPathCanvas.drawPath(lastPath.path, mPaintClean);
+    protected void drawMask() {
+        if (isDrawAll) {
+            mPathCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            //对path进行合成
+            preDrawAll(mPathCanvas, mPaintPath, true);
+            for (MosaicPath mosaicPath : mPathList) {
+                drawSinglePath(mosaicPath, mPathCanvas);
+            }
+            isDrawAll = false;
         } else {
-//            int count = mPathCanvas.saveLayer(null, null, Canvas.ALL_SAVE_FLAG);
+            if (!mPathList.isEmpty()) {
+                MosaicPath lastPath = getLastPath();
+                drawSinglePath(lastPath, mPathCanvas);
+            }
+        }
+    }
+
+    protected void preDrawAll(Canvas pathCanvas, Paint pathPaint, boolean needBlur) {
+
+    }
+
+    protected void drawPathToCanvas() {
+        mResultCanvas.drawBitmap(mPathBitmap, 0, 0, mPaintSrc);
+    }
+
+    protected void setPathPaint(Paint pathPaint) {
+        pathPaint.setStyle(Paint.Style.STROKE);
+        pathPaint.setStrokeJoin(Paint.Join.ROUND);
+        pathPaint.setStrokeCap(Paint.Cap.ROUND);
+        pathPaint.setColor(Color.RED);
+        pathPaint.setAntiAlias(true);
+        pathPaint.setDither(true);
+    }
+
+    protected void drawSinglePath(MosaicPath lastPath, Canvas pathCanvas) {
+        /*if (lastPath.type == MosaicPath.TYPE_CLEAN) {
+            mPaintClean.setStrokeWidth(lastPath.size);
+            pathCanvas.drawPath(lastPath.path, mPaintClean);
+        } else {
+            logger.info("drawSinglePath size = " + lastPath.size);
             mPaintPath.setStrokeWidth(lastPath.size);
-            mPathCanvas.drawPath(lastPath.path, mPaintPath);
-//                    if (selectMskModel == MosaicPath.TYPE_PIC) {
-//                        mPathCanvas.drawBitmap(mPicBitmap, 0, 0, mPaintSRC_IN);
-//                    } else {
-//                        mPathCanvas.drawBitmap(mMskBitmap, 0, 0, mPaintSRC_IN);
-//                    }
-//                    mPathCanvas.restoreToCount(count);
+            pathCanvas.drawPath(lastPath.path, mPaintPath);
+        }*/
+        drawSinglePath(lastPath, pathCanvas, mPaintClean, mPaintPath);
+    }
+
+    public static void drawSinglePath(MosaicPath lastPath, Canvas pathCanvas
+            , Paint paintClean, Paint paintPath) {
+        if (lastPath.type == MosaicPath.TYPE_CLEAN) {
+            paintClean.setStrokeWidth(lastPath.size);
+            pathCanvas.drawPath(lastPath.path, paintClean);
+        } else {
+            paintPath.setStrokeWidth(lastPath.size);
+            pathCanvas.drawPath(lastPath.path, paintPath);
         }
     }
 
@@ -245,7 +276,6 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
             mIsTriggerMultiTouch = false;
             MosaicPath path = createPath();
             path.path.moveTo(posImage[0], posImage[1]);
-            mPathList.add(path);
             mPointerX = event.getX();
             mPointerY = event.getY();
             invalidate();
@@ -256,22 +286,25 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
             mPointerX = event.getX();
             mPointerY = event.getY();
             invalidate();
-        } else if (action == MotionEvent.ACTION_UP && mInterFace != null) {
+        } else if (action == MotionEvent.ACTION_UP) {
             mPointerX = -1;
             mPointerY = -1;
             invalidate();
-            mInterFace.onMosaicDrawComplete(mPathList.size());
+            if (mInterFace != null)
+                mInterFace.onMosaicDrawComplete(mPathList.size());
+            logger.info("touch up, path size = " + mPathList.size());
         }
         return true;
     }
 
-    private boolean isEmptyEraserModel() {
+    protected boolean isEmptyEraserModel() {
         return mPathList.isEmpty() && currentModel == MosaicPath.TYPE_CLEAN;
     }
 
     private MosaicPath getLastPath() {
-        if (mPathList.isEmpty())
-            return new MosaicPath();
+        if (mPathList.isEmpty()) {
+            return createPath();
+        }
         return mPathList.get(mPathList.size() - 1);
     }
 
@@ -280,6 +313,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         path.type = currentModel;
         path.path = new Path();
         path.size = mRealPaintSize;
+        mPathList.add(path);
         return path;
     }
 
@@ -309,7 +343,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
      * @param src 原图
      * @param msk 像素马赛克化后的图片
      */
-    public void setBitmaps(Bitmap src, Bitmap msk) {
+    public void setBitmaps(Bitmap src, Bitmap msk, boolean needShader) {
         mSrcBitmap = src;
         mPathBitmap = Glide.get(getContext()).getBitmapPool()
                 .get(mSrcBitmap.getWidth(), mSrcBitmap.getHeight(), Bitmap.Config.ARGB_8888);
@@ -318,22 +352,23 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         mResultCanvas = new Canvas(mResultBitmap);
         mViewCamera.setBlock(true);
         mViewCamera.setImageSize(mSrcBitmap.getWidth(), mSrcBitmap.getHeight());
-        setMskBitmap(msk);
         mFitScale = mViewCamera.getViewScale();
         mirrorRectF = new MosaicMirrorRectF(mMirrorSize, mMirrorSize, 10, 10,
                 mMirrorCenterCircleRadius, getWidth(), mSrcBitmap.getWidth(), mSrcBitmap.getHeight());
         setRealPaintSizeAndMirrorCenterCircleRadius();
         isInit = true;
         isPreView = false;
+        setMskBitmap(msk, needShader);
     }
 
 
     /**
      * 设置为马赛克模式
      */
-    public void setMskBitmap(Bitmap msk) {
+    public void setMskBitmap(Bitmap msk, boolean needShader) {
         //整张图被算法像素马赛克化后的图片
-        mPaintPath.setShader(new BitmapShader(msk, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        if (needShader)
+            mPaintPath.setShader(new BitmapShader(msk, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
         currentModel = MosaicPath.TYPE_SMUDGE;
         selectMskModel = MosaicPath.TYPE_SMUDGE;
         isDrawAll = true;
@@ -394,6 +429,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         float tmpMirrorImageSize = mMirrorSize / scale;
         mirrorRectF.setImageRectSize((int) tmpMirrorImageSize);
         mRealPaintSize = mPaintSize / scale;
+        logger.info("onViewScaleChanged scale = " + viewScale);
     }
 
     //undo时候，将pathList的最后一条移除，添加到redoList去
@@ -426,6 +462,10 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
         mRedoPathList.clear();
     }
 
+    public int getDefaultDisplaySizeProgress() {
+        return (int) DEFAULT_SIZE_PERCENT;
+    }
+
     public int getDisplaySizeProgress() {
         return (int) (ValueMappingUtils.getLinearOutput(mMinSizeRadius, 0,
                 mMaxSizeRadius, 100, mPaintSize));
@@ -440,13 +480,39 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
     private void setRealPaintSizeAndMirrorCenterCircleRadius() {
         float scale = mViewCamera.getViewScale() / mFitScale;
         mRealPaintSize = mPaintSize / scale;
-        //由于镜子中自带缩放，画笔在这里缩小的，在镜子显示出来的会放大回去，所以这里圆圈大小要把画笔缩放的乘回去。
         mMirrorCenterCircleRadius = mPaintSize / 2f;
         if (mirrorRectF != null)
             mirrorRectF.setCircleRadius(mMirrorCenterCircleRadius);
-
     }
 
+    public void reset(boolean invalidate) {
+        mPathList.clear();
+        mRedoPathList.clear();
+        isDrawAll = true;
+        if (invalidate) {
+            invalidate();
+        }
+    }
+
+    public void cleanBitmap() {
+        if (mSrcBitmap != null) {
+            mSrcBitmap.recycle();
+        }
+        if (mPathBitmap != null) {
+            mPathBitmap.recycle();
+        }
+        if (mResultBitmap != null) {
+            mResultBitmap.recycle();
+        }
+        if (mPathCanvas != null) {
+            mPathCanvas.setBitmap(null);
+        }
+        if (mResultCanvas != null) {
+            mResultCanvas.setBitmap(null);
+        }
+        mPathList.clear();
+        mRedoPathList.clear();
+    }
 
     public float getPaintSize() {
         return mPaintSize;
@@ -459,6 +525,7 @@ public class MosaicPainter extends View implements ViewCamera.ViewCameraListener
     public ArrayList<MosaicPath> getPathList() {
         return mPathList;
     }
+
 
     public interface MosaicInterFace {
 

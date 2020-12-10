@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <com.colin.mosaicdemo.art.DoubleExposureView
+            android:id="@+id/view_exposure"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.colin.mosaicdemo.art.PersonPainter
+            android:id="@+id/view_painter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button_left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="双重曝光" />
+
+        <Button
+            android:id="@+id/button_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="涂抹区域" />
+
+        <TextView
+            android:id="@+id/tv_info"
+            android:layout_width="wrap_content"
+            android:textColor="#fff"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/layout_painter"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:visibility="invisible"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_reset"
+            style="@style/button"
+            android:text="重置" />
+
+        <TextView
+            android:id="@+id/btn_undo"
+            style="@style/button"
+            android:text="撤销" />
+
+        <TextView
+            android:id="@+id/btn_redo"
+            style="@style/button"
+            android:text="重做" />
+
+        <TextView
+            android:id="@+id/btn_paint"
+            style="@style/button"
+            android:text="画笔" />
+
+        <TextView
+            android:id="@+id/btn_era"
+            style="@style/button"
+            android:text="橡皮擦" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</LinearLayout>

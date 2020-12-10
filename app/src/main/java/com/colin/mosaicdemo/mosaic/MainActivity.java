@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.mosaic;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.colin.mosaicdemo.R;
+import com.colin.mosaicdemo.util.SizeUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,12 +40,12 @@ public class MainActivity extends AppCompatActivity implements MosaicPainter.Mos
                 public void run() {
                     int botMargin = getResources().getDimensionPixelSize(R.dimen.bot_height);
                     mosaicPainter.setBottomMargin(botMargin);
-                    float fitScale = computeFitScale(srcBitmap,
+                    float fitScale = SizeUtils.computeFitScale(srcBitmap,
                             mosaicPainter.getWidth(), mosaicPainter.getHeight() - botMargin);
                     mosaicPainter.getViewCamera().setViewScale(fitScale, fitScale, fitScale * 2f);
                     mosaicPainter.getViewCamera().setImageSize(srcBitmap.getWidth(), srcBitmap.getHeight());
                     //这里马赛克化的图片需要有算法生成，方便演示。使用原图代替。
-                    mosaicPainter.setBitmaps(srcBitmap, srcBitmap);
+                    mosaicPainter.setBitmaps(srcBitmap, srcBitmap, true);
                     setPic();
                 }
             });
@@ -94,22 +96,6 @@ public class MainActivity extends AppCompatActivity implements MosaicPainter.Mos
     }
 
 
-    private float computeFitScale(@NonNull Bitmap srcBitmap, int viewWidth, int viewHeight) {
-        float fitscale;
-
-        float drawMargin = 0f;
-
-        float imgW = srcBitmap.getWidth();
-        float imgH = srcBitmap.getHeight();
-
-        float scaleWidth = (viewWidth - drawMargin) / imgW;
-
-        float scaleHeight = (viewHeight - drawMargin) / imgH;
-
-        fitscale = Math.min(scaleWidth, scaleHeight);
-
-        return fitscale;
-    }
 
 
     @Override

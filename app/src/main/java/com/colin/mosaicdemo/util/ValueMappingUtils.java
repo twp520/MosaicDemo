@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.util;
 
 
 public class ValueMappingUtils {

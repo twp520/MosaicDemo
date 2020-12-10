@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.mosaic;
 
 import android.graphics.Path;
 

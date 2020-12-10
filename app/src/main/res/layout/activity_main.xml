@@ -4,10 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000"
-    tools:context=".MainActivity">
+    tools:context=".mosaic.MainActivity">
 
 
-    <com.colin.mosaicdemo.MosaicPainter
+    <com.colin.mosaicdemo.mosaic.MosaicPainter
         android:id="@+id/main_mp"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

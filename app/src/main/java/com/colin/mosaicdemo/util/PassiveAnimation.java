@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.util;
 
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;

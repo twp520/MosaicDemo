@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.mosaic;
 
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -22,6 +22,7 @@ public class MosaicMirrorRectF {
     private Rect mImageRect;
     private int imageHeight;
     private int imageWidth;
+    public boolean circleOverEdge = false; // 圆圈超出边界
 
     public MosaicMirrorRectF(int rectSize, int imageRectSize, int marginTop,
                              int marginLeft, float circleRadius,
@@ -52,7 +53,7 @@ public class MosaicMirrorRectF {
             isLeft = !isLeft;
         }
         mCircleX = mRectF.left + mRectF.width() / 2f;
-        mCircleY = mRectF.height() / 2f;
+        mCircleY = mRectF.top + mRectF.height() / 2f;
 
         float tmpLeft = imageX - mImageRectSize / 2f;
         float tmpTop = imageY - mImageRectSize / 2f;
@@ -62,21 +63,27 @@ public class MosaicMirrorRectF {
         int tmpRight = left + mImageRectSize;
         int bottom = Math.min(imageHeight, tmpBottom);
         int right = Math.min(imageWidth, tmpRight);
+
+        float scale = mRectF.width() / mImageRectSize; // image和指示镜的比例
         if (bottom == imageHeight) {
             top = imageHeight - mImageRectSize;
-            mCircleY = Math.min(mRectF.bottom - mCircleRadius, mCircleY + (tmpBottom - imageHeight));
+            mCircleY = Math.min(mRectF.bottom + mCircleRadius, mCircleY + (tmpBottom - imageHeight) * scale);
         }
         if (right == imageWidth) {
             left = imageWidth - mImageRectSize;
-            mCircleX = Math.min(mRectF.right - mCircleRadius, mCircleX + (tmpRight - imageWidth));
+            mCircleX = Math.min(mRectF.right + mCircleRadius, mCircleX + (tmpRight - imageWidth) * scale);
         }
 
         if (top == 0) {
-            mCircleY = Math.max(mRectF.top + mCircleRadius, mCircleY - Math.abs(tmpTop));
+            mCircleY = Math.max(mRectF.top - mCircleRadius, mCircleY - Math.abs(tmpTop) * scale);
         }
         if (left == 0) {
-            mCircleX = Math.max(mRectF.left + mCircleRadius, mCircleX - Math.abs(tmpLeft));
+            mCircleX = Math.max(mRectF.left - mCircleRadius, mCircleX - Math.abs(tmpLeft) * scale);
         }
+
+        circleOverEdge = (mCircleY >= (mRectF.bottom + mCircleRadius) || mCircleY <= (mRectF.top - mCircleRadius) ||
+                mCircleX >= (mRectF.right + mCircleRadius) || mCircleX <= (mRectF.left - mCircleRadius));
+
         mImageRect.set(left, top, right, bottom);
     }
 
@@ -101,7 +108,7 @@ public class MosaicMirrorRectF {
         mImageRectSize = size;
     }
 
-    public void setCircleRadius(float radius){
+    public void setCircleRadius(float radius) {
         mCircleRadius = radius;
     }
 }

@@ -1,4 +1,4 @@
-package com.colin.mosaicdemo;
+package com.colin.mosaicdemo.util;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
@@ -64,6 +64,10 @@ public class ViewCamera implements ScalePanGestureDetector.OnScalePanGestureList
         mIsAnimating = false;
 
         mIsBlock = true;
+    }
+    public void reset() {
+        mViewPos[0]=0;
+        mViewPos[1]=0;
     }
 
     /**
