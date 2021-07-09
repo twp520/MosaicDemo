@@ -172,7 +172,7 @@ public class PointerInfo {
 
     // 触碰两点间距离
     private float getSpacing(MotionEvent event) {
-        //通过三角函数得到两点间的距离
+        //通过勾股定理得到两点间的距离
         float x = event.getX(findActionIndex(event))
                 - event.getX(findSCaleIndex(event));
         float y = event.getY(findActionIndex(event))
